@@ -50,6 +50,7 @@ from contextlib import contextmanager
 from datasets import load_dataset
 
 from trl import GRPOConfig, GRPOTrainer, ModelConfig, ScriptArguments, TrlParser
+from search_rollout import create_search_rollout_func
 
 
 # Enable logging in a Hugging Face Space
@@ -107,7 +108,7 @@ def normalize_answer(s):
         return "".join(ch for ch in text if ch not in exclude)
 
     def lower(text):
-        print(text)
+        # print(text)
         return text.lower()
 
     return white_space_fix(remove_articles(remove_punc(lower(s))))
@@ -128,7 +129,7 @@ def extract_solution(solution_str):
     matches = list(match)
     
     # If there are 0 or exactly 1 matches, return None
-    if len(matches) <= 1:
+    if len(matches) < 1:
         return None
     
     # If there are 2 or more matches, return the last one
@@ -158,8 +159,8 @@ def compute_score_em(completions, solution, method='strict', format_score=0., sc
     """
 
     # answer = extract_solution(solution_str=solution_str)
-    print("1:", completions)
-    print("2:", solution)
+    # print("1:", completions)
+    # print("2:", solution)
     scores = []
     
     solution_str = completions[-1][0]["content"]
@@ -167,20 +168,20 @@ def compute_score_em(completions, solution, method='strict', format_score=0., sc
     
     do_print = random.randint(1, 64) == 1
     
-    if do_print:
-        print(f"--------------------------------")
-        print(f"Golden answers: {solution}")
+    # if do_print:
+        # print(f"--------------------------------")
+        # print(f"Golden answers: {solution}")
         # print(f"Extracted answer: {answer}")
-        print(f"Solution string: {solution_str}")
+        # print(f"Solution string: {solution_str}")
     contents = [completion[-1]["content"] for completion in completions]
-    for pre, s in zip(contents, solution):
-        # pre = completion[-1]["content"]
+    for completion, s in zip(completions, solution):
+        pre = completion[-1]["content"]
         pre = extract_solution(solution_str=pre)
         if pre is None:
             scores.append(0)
             
         else:
-            if em_check(pre, solution):
+            if em_check(pre, s):
                 scores.append(1)
             else:
                 scores.append(0)
@@ -244,11 +245,11 @@ def search(query: str):
 def format_example(example):
     query = example["question"]
     messages = [
-    {"role": "system", "content": "Answer the given question. Each time you obtain new information, you must think and reason. \
-     After thinking, if you find that you lack certain knowledge, you can acquire it through tools and obtain relevant information. \
-     You can search as many times as your want.If you find no further external knowledge needed, you can directly provide the answer inside <answer> and </answer>, without detailed illustrations. For example, <answer> Beijing </answer>.\
-     The following is the user's question."},
-    {"role": "user", "content": query}
+    {"role": "system", "content": f"Answer the given question. \
+You must conduct reasoning inside <think> and </think> first every time you get new information. \
+After reasoning, if you find you lack some knowledge, you can call a search engine by <search> query </search> and it will return the top searched results between <information> and </information>. \
+You can search as many times as your want. \
+If you find no further external knowledge needed, you can directly provide the answer inside <answer> and </answer>, without detailed illustrations. For example, <answer> Beijing </answer>. Question: {query}\n"},
     ]
     solution = example["golden_answers"][0]
     # content = f"{preamble}\nQuestion: {question}"
@@ -283,7 +284,7 @@ if __name__ == "__main__":
     # ------------------------
     # Load and format dataset
     # ------------------------
-    dataset = load_dataset(script_args.dataset_name, "nq")
+    dataset = load_dataset("RUC-NLPIR/FlashRAG_datasets", "nq")
     # dataset = dataset.filter(
         # lambda example: example["question"].startswith("Does the gene ")
     # )  # keep only simple questions for example
@@ -302,12 +303,20 @@ if __name__ == "__main__":
     # ------------------------
     # Initialize trainer
     # ------------------------
+    # Create custom rollout function for search tool
+    search_rollout = create_search_rollout_func(
+        search_func=search,
+        max_search_calls=10,  # Maximum search calls per generation
+        max_iterations=20,     # Maximum tool calling iterations
+    )
+    
     trainer = GRPOTrainer(
         model=model_args.model_name_or_path,
         train_dataset=train_dataset,
-        eval_dataset=eval_dataset,
-        tools=[search],
-        reward_funcs=[compute_score_em, structure_reward],
+        # eval_dataset=eval_dataset,
+        # Use rollout_func instead of tools for custom <search> tag handling
+        rollout_func=search_rollout,
+        reward_funcs=[compute_score_em],
         args=training_args,
     )
 
