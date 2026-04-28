@@ -11,10 +11,19 @@
 #     --save_strategy no \
 #     --eval_strategy no \
     
-python train_grpo_v2.py \
-        --model_name_or_path /home/l33500/models/Qwen/Qwen3-0.6B \
-        --output_dir outputs/search-r1-v2 \
-        --max_completion_length 8192 \
-        --num_generations 4 \
-        --log_completions True \
-        --max_steps 500
+# python train_grpo_v2.py \
+#         --model_name_or_path /home/l33500/models/Qwen/Qwen3-0.6B \
+#         --output_dir outputs/search-r1-v2 \
+#         --max_completion_length 8192 \
+#         --num_generations 4 \
+#         --log_completions True \
+#         --max_steps 500
+
+python train_search_r1.py \
+    --model_name_or_path /home/l33500/models/Qwen/Qwen3-0.6B \
+    --output_dir outputs/search-r1 \
+    --max_completion_length 4096 \
+    --num_generations 4 \
+    --log_completions True \
+    --max_steps 500 \
+    --report_to none

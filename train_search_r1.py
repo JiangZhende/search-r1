@@ -48,7 +48,7 @@ os.environ.setdefault("TRACKIO_SPACE_ID", "trl-trackio")
 # ============================================================================
 
 SYSTEM_PROMPT = """Answer the given question. \
-You must conduct reasoning inside <arg_key> and </think> first every time you get new information. \
+You must conduct reasoning inside <thought> and </thought> first every time you get new information. \
 After reasoning, if you find you lack some knowledge, you can call a search engine by <search> query </search> and it will return the top searched results between <information> and </information>. \
 You can search as many times as your want. \
 If you find no further external knowledge needed, you can directly provide the answer inside <answer> and </answer>, without detailed illustrations. For example, <answer> Beijing </answer>."""
@@ -173,7 +173,7 @@ def format_example(example: dict) -> dict:
     """
     query = example["question"]
 
-    prompt = SYSTEM_PROMPT + f"\n\nQuestion: {query}"
+    prompt = SYSTEM_PROMPT + f" Question: {query}\n"
 
     messages = [{"role": "user", "content": prompt}]
 
@@ -190,6 +190,9 @@ def format_example(example: dict) -> dict:
 if __name__ == "__main__":
     parser = TrlParser((ScriptArguments, GRPOConfig, ModelConfig))
     script_args, training_args, model_args = parser.parse_args_and_config()
+
+    # Match test.py's chat-template path.
+    training_args.chat_template_kwargs = {"enable_thinking": False}
 
     # --------------------------------------------------------
     # Load and format dataset
