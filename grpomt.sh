@@ -1,0 +1,14 @@
+../grpo/bin/python train_search_r1_mt.py \
+    --model_name_or_path /home/l33500/models/Qwen/Qwen3-0.6B \
+    --output_dir outputs/search-r1-mt2 \
+    --max_completion_length 4096 \
+    --num_generations 8 \
+    --per_device_train_batch_size 4 \
+    --gradient_accumulation_steps 2 \
+    --learning_rate 1e-6 \
+    --max_steps 2000 \
+    --beta 0.02 \
+    --reward_weights 1.0 1.0 0.5 0.5 0.5 \
+    --temperature 1.0 \
+    --log_completions False \
+    --report_to none
