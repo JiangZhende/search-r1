@@ -572,7 +572,7 @@ def format_example(example: dict) -> dict:
     prompt = SYSTEM_PROMPT + f" Question: {example['question']}\n"
     return {
         "prompt": [{"role": "user", "content": prompt}],
-        "solution": example["golden_answers"][0],
+        "solution": example["golden_answers"],
     }
 
 
