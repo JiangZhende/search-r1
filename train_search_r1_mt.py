@@ -9,22 +9,14 @@ Conversation pattern used for generation:
    {"role": "user",      "content": "<information>\\nresults\\n</information>"},
    {"role": "assistant", "content": "<thought>...</thought><answer>answer</answer>"}]
 
-Difference from train_search_r1.py (v1):
-  v1 (flat): information is injected as raw text in one big flat sequence.
-             The token sequence is:  prompt_ids || [thought search info thought answer]
-             <information> is encoded as bare text, not as a role turn.
-
-  MT (this): information is encoded as a proper "user" message via
-             apply_chat_template, so the model sees:
-               <|im_start|>user\\n<information>...\\n</information><|im_end|>
-             before generating the next <thought>. This matches the chat
-             format the base model was fine-tuned on.
+<information> is encoded as a proper "user" message via apply_chat_template,
+so the model sees:
+  <|im_start|>user\\n<information>...\\n</information><|im_end|>
+before generating the next <thought>.
 
 Loss masking:
   completion_mask=1  for model-generated (assistant) tokens
   completion_mask=0  for injected user-turn tokens (<information> blocks)
-
-Reward functions are identical to train_search_r1.py (v8).
 """
 
 import copy
